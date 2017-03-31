@@ -3,103 +3,57 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Node : IEquatable<Node>
+public class Node : IHeapItem<Node>
 {
+    public bool walkable;
     public int x;
     public int y;
 
-    public int gScore;
-    private int fScore;
-    private int hScore;
-
-    const int halfMaxValue = int.MaxValue / 2;
-
-    public Node cameFrom;
-
-    public Node()
+    public int gCost;
+    public int hCost;
+    public Node parent;
+    int heapIndex;
+    
+    public Node(bool walkable, int x, int y)
     {
-        gScore = halfMaxValue;
-        hScore = halfMaxValue;
-        cameFrom = null;
-    }
-
-    public Node(int x, int y, Node cameFrom)
-    {
+        this.walkable = walkable;
         this.x = x;
         this.y = y;
-        gScore = halfMaxValue;
-        hScore = halfMaxValue;
-        this.cameFrom = cameFrom;
-        if (this.cameFrom != null)
-        {
-            gScore = cameFrom.gScore + 1;
-        }
     }
 
-    public Node(Vector3 pos)
-    {
-        x = (int)pos.x;
-        y = -((int)pos.y);
-        gScore = halfMaxValue;
-        hScore = halfMaxValue;
-        cameFrom = null;
-    }
-
-    public Node(Vector3 pos, Node cameFrom)
-    {
-        x = (int)pos.x;
-        y = -((int)pos.y);
-        gScore = halfMaxValue;
-        hScore = halfMaxValue;
-        this.cameFrom = cameFrom;
-        if (this.cameFrom != null)
-        {
-            gScore = cameFrom.gScore + 1;
-        }
-    }
-
-    public int FScore
+    public int fCost
     {
         get
         {
-            return gScore + hScore;
+            return gCost + hCost;
         }
     }
 
-    public int HScore
+    public int HeapIndex
     {
         get
         {
-            return gScore + fScore;
+            return heapIndex;
+        }
+        set
+        {
+            heapIndex = value;
         }
     }
 
-    public int CalculateHScore(Vector3 targetPos)
+    public int CompareTo(Node nodeToCompare)
     {
-        int distX = Mathf.Abs(x - (int)targetPos.x);
-        int distY = Mathf.Abs(y - -((int)targetPos.y));
-
-        hScore = distX + distY;
-        return distX + distY;
+        int compare = fCost.CompareTo(nodeToCompare.fCost);
+        if (compare == 0)
+        {
+            compare = hCost.CompareTo(nodeToCompare.hCost);
+        }
+        return -compare;
     }
 
-    public int CalculateHScore(Node targetNode)
+    public override bool Equals(object other)
     {
-        int distX = Mathf.Abs(x - targetNode.x);
-        int distY = Mathf.Abs(y - targetNode.y);
-
-        hScore = distX + distY;
-        return distX + distY;
+        Node n = (Node)other;
+        return (x == n.x && y == n.y);
     }
-
-    public Vector3 ToVector3()
-    {
-        return new Vector3(x, y, 0.0f);
-    }
-
-    public bool Equals(Node other)
-    {
-        return (x == other.x && y == other.y);
-    }
-         
 }

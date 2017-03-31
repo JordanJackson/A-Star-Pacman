@@ -94,6 +94,7 @@
     <Compile Include="Assets\Game\Scripts\Game\PowerPelletController.cs" />
     <Compile Include="Assets\Game\Scripts\Game\Singleton.cs" />
     <Compile Include="Assets\Game\Scripts\Ghosts\GhostController.cs" />
+    <Compile Include="Assets\Game\Scripts\Heap.cs" />
     <Compile Include="Assets\Game\Scripts\Node.cs" />
     <Compile Include="Assets\Game\Scripts\Pathfinder.cs" />
     <Compile Include="Assets\GhostActionNodes\Blinky\BlinkyCagedActionNode.cs" />

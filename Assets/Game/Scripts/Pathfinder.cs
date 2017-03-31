@@ -18,16 +18,6 @@ public class Pathfinder : Singleton<Pathfinder>
         new Direction(0, 1)             // up
     };
 
-    private void Start()
-    {
-
-    }
-
-    private void Update()
-    {
-
-    }
-
     public Vector3 generatePath(Vector3 _position, Vector3 _target, ref List<Vector3> _path)
     {
         int count = 0;
@@ -36,25 +26,24 @@ public class Pathfinder : Singleton<Pathfinder>
         // if _target not walkable, re-compute to closer walkable node
         // if _start not walkable something bad happened, break and debug
 
-        // create start node and initialize f and g costs
-        Node startNode = new Node(_position);
-        Node targetNode = new Node(_target);
-        startNode.gScore = 0;
-        startNode.CalculateHScore(_target);
-
-        if (collisionMap.CheckCollision(startNode.x, startNode.y))
+        // create start node
+        int startX = (int)_position.x;
+        int startY = (int)-_position.y;
+        Node startNode = new Node(!collisionMap.CheckCollision(startX, startY), startX, startY);
+        if (!startNode.walkable)
         {
-            Debug.Log("Unwalkable start node at " + startNode.x + ", " + startNode.y +  ", Ghost out of position.");
+            Debug.Log("Unwalkable start node.");
             return Vector3.zero;
         }
+        // create target node
+        int targetX = (int)_target.x;
+        int targetY = (int)-_target.y;
+        Node targetNode = new Node(!collisionMap.CheckCollision(targetX, targetY), targetX, targetY);
+        // if target not walkable, consider moving target to closest walkable node
 
+        Heap<Node> openSet = new Heap<Node>(collisionMap.MapWidth * collisionMap.MapHeight * 10);
         List<Node> closedSet = new List<Node>();
-        List<Node> openSet = new List<Node>();
-
-
-        // add start to open set
         openSet.Add(startNode);
-        //_path.Add(_position);
 
         // main loop
         while (openSet.Count > 0)
@@ -65,53 +54,51 @@ public class Pathfinder : Singleton<Pathfinder>
                 return Vector3.zero;
             }
             // get node in openSet with lowest fCost
-            Node current = FindLowestInList(openSet);
+            Node current = openSet.RemoveFirst();
+            closedSet.Add(current);
 
+            // check if we found target Node
             if (current.Equals(targetNode))
             {
-                // calculate path and return
+                Debug.Log("Path found: " + new Vector3(current.x, current.y, 0.0f));
                 _path = ReconstructPath(current);
-                return current.ToVector3();
+                return new Vector3(current.x, current.y, 0.0f);
             }
-
-            openSet.Remove(current);
-            closedSet.Add(current);
 
             for (int i = 0; i < dirMap.Length; i++)
             {
                 // create new Nodes based on dir and check for collision
-                Node neighbour = new Node(current.x + dirMap[i].x, current.y + dirMap[i].y, current);
+                int neighX = current.x + dirMap[i].x;
+                int neighY = current.y + dirMap[i].y;
 
-                // not walkable
-                if (collisionMap.CheckCollision(neighbour.x, neighbour.y))
+                Node neighbour = new Node(!collisionMap.CheckCollision(neighX, neighY), neighX, neighY);
+
+                if (!neighbour.walkable)
+                {
                     continue;
+                }
 
                 if (closedSet.Contains(neighbour))
                 {
                     continue;
                 }
 
-                int tempGScore = current.gScore + 1;
-                Node n = FindNodeInList(neighbour, openSet);
-                if (n == null)
+                int tempGScore = current.gCost + 1;
+                if (tempGScore < neighbour.gCost || !openSet.Contains(neighbour))
                 {
-                    openSet.Add(neighbour);
-                }
-                else
-                {
-                    if (tempGScore >= n.gScore)
+                    neighbour.gCost = tempGScore;
+                    neighbour.hCost = GetDistance(neighbour, targetNode);
+                    neighbour.parent = current;
+
+                    if (!openSet.Contains(neighbour))
                     {
-                        continue;
+                        openSet.Add(neighbour);
                     }
                     else
                     {
-                        n.cameFrom = current;
-                        n.gScore = tempGScore;
-                        n.CalculateHScore(_target);
+                        openSet.UpdateItem(neighbour);
                     }
                 }
-
-
             }
         }
 
@@ -121,49 +108,27 @@ public class Pathfinder : Singleton<Pathfinder>
         return Vector3.zero;
     }
 
-    private Node FindLowestInList(List<Node> nodeList)
-    {
-        int currentIndex = 0;
-        int currentBest = int.MaxValue;
-
-        for (int i = 0; i < nodeList.Count; i++)
-        {
-            if (nodeList[i].FScore < currentBest)
-            {
-                currentIndex = i;
-                currentBest = nodeList[i].FScore;
-            }
-        }
-
-        return nodeList[currentIndex];
-    }
-
-    private Node FindNodeInList(Node node, List<Node> nodeList)
-    {
-        for (int i = 0; i < nodeList.Count; i++)
-        {
-            if (nodeList[i].Equals(node))
-            {
-                return nodeList[i];
-            }
-        }
-
-        return null;
-    }
-
     private List<Vector3> ReconstructPath(Node endNode)
     {
         List<Vector3> path = new List<Vector3>();
-        path.Add(endNode.ToVector3());
-        Node current = endNode.cameFrom;
+        path.Add(new Vector3(endNode.x, endNode.y, 0.0f));
+        Node current = endNode.parent;
         while (current != null)
         {
-            path.Add(current.ToVector3());
-            current = current.cameFrom;
+            path.Add(new Vector3(current.x, current.y, 0.0f));
+            current = current.parent;
         }
 
         path.Reverse();
         return path;
+    }
+
+    int GetDistance(Node nodeA, Node nodeB)
+    {
+        int dstX = Mathf.Abs(nodeA.x - nodeB.x);
+        int dstY = Mathf.Abs(nodeA.y - nodeB.y);
+
+        return dstX + dstY;
     }
 
     public class Direction
