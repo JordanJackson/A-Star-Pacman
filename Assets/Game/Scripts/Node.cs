@@ -12,38 +12,57 @@ public class Node : IEquatable<Node>
     private int fScore;
     private int hScore;
 
+    const int halfMaxValue = int.MaxValue / 2;
+
     public Node cameFrom;
 
     public Node()
     {
-        gScore = int.MaxValue;
-        fScore = int.MaxValue;
+        gScore = halfMaxValue;
+        hScore = halfMaxValue;
         cameFrom = null;
+    }
+
+    public Node(int x, int y, Node cameFrom)
+    {
+        this.x = x;
+        this.y = y;
+        gScore = halfMaxValue;
+        hScore = halfMaxValue;
+        this.cameFrom = cameFrom;
+        if (this.cameFrom != null)
+        {
+            gScore = cameFrom.gScore + 1;
+        }
     }
 
     public Node(Vector3 pos)
     {
         x = (int)pos.x;
-        y = -((int)pos.y + 1);
-        gScore = int.MaxValue;
-        fScore = int.MaxValue;
+        y = -((int)pos.y);
+        gScore = halfMaxValue;
+        hScore = halfMaxValue;
         cameFrom = null;
     }
 
     public Node(Vector3 pos, Node cameFrom)
     {
         x = (int)pos.x;
-        y = -((int)pos.y + 1);
-        gScore = int.MaxValue;
-        fScore = int.MaxValue;
+        y = -((int)pos.y);
+        gScore = halfMaxValue;
+        hScore = halfMaxValue;
         this.cameFrom = cameFrom;
+        if (this.cameFrom != null)
+        {
+            gScore = cameFrom.gScore + 1;
+        }
     }
 
     public int FScore
     {
         get
         {
-            return fScore;
+            return gScore + hScore;
         }
     }
 
@@ -55,25 +74,27 @@ public class Node : IEquatable<Node>
         }
     }
 
-    public void CalculateFScore(Vector3 targetPos)
+    public int CalculateHScore(Vector3 targetPos)
     {
         int distX = Mathf.Abs(x - (int)targetPos.x);
-        int distY = Mathf.Abs(y - -((int)targetPos.y + 1));
+        int distY = Mathf.Abs(y - -((int)targetPos.y));
 
-        fScore = distX + distY;
+        hScore = distX + distY;
+        return distX + distY;
     }
 
-    public void CalculateFScore(Node targetNode)
+    public int CalculateHScore(Node targetNode)
     {
         int distX = Mathf.Abs(x - targetNode.x);
         int distY = Mathf.Abs(y - targetNode.y);
 
-        fScore = distX + distY;
+        hScore = distX + distY;
+        return distX + distY;
     }
 
     public Vector3 ToVector3()
     {
-        return new Vector3(x, (-y) - 1.0f, 0.0f);
+        return new Vector3(x, y, 0.0f);
     }
 
     public bool Equals(Node other)

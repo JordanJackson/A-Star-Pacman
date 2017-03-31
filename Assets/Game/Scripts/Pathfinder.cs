@@ -5,6 +5,9 @@ using AStarPathfinding;
 
 public class Pathfinder : Singleton<Pathfinder> 
 {
+
+    public int breakCount = 5000;
+
     public CollisionMap collisionMap;
 
     public Direction[] dirMap =
@@ -17,28 +20,17 @@ public class Pathfinder : Singleton<Pathfinder>
 
     private void Start()
     {
-        if (collisionMap.CollisionTable == null)
-        {
-            Debug.Log("Null Collision Table");
-        }
-        Debug.Log("Collision Check: " + collisionMap.CheckCollision(0, 1));
+
     }
 
     private void Update()
     {
-        if (collisionMap.CollisionTable == null)
-        {
-            Debug.Log("Null Collision Table in Update.");
-        }
-        else
-        {
-            Debug.Log("Collision Table no longer null.");
-            Debug.Log("Collision Check: " + collisionMap.CheckCollision(0, 1));
-        }
+
     }
 
-    public Vector3 generatePath(Vector3 _position, Vector3 _target, List<Vector3> _path)
+    public Vector3 generatePath(Vector3 _position, Vector3 _target, ref List<Vector3> _path)
     {
+        int count = 0;
         if (collisionMap.CollisionTable == null)
             return Vector3.zero;
         // if _target not walkable, re-compute to closer walkable node
@@ -48,7 +40,7 @@ public class Pathfinder : Singleton<Pathfinder>
         Node startNode = new Node(_position);
         Node targetNode = new Node(_target);
         startNode.gScore = 0;
-        startNode.CalculateFScore(_target);
+        startNode.CalculateHScore(_target);
 
         if (collisionMap.CheckCollision(startNode.x, startNode.y))
         {
@@ -62,11 +54,16 @@ public class Pathfinder : Singleton<Pathfinder>
 
         // add start to open set
         openSet.Add(startNode);
-        _path.Add(_position);
+        //_path.Add(_position);
 
         // main loop
         while (openSet.Count > 0)
         {
+            count++;
+            if (count >= breakCount)
+            {
+                return Vector3.zero;
+            }
             // get node in openSet with lowest fCost
             Node current = FindLowestInList(openSet);
 
@@ -83,13 +80,44 @@ public class Pathfinder : Singleton<Pathfinder>
             for (int i = 0; i < dirMap.Length; i++)
             {
                 // create new Nodes based on dir and check for collision
-            }
+                Node neighbour = new Node(current.x + dirMap[i].x, current.y + dirMap[i].y, current);
 
-            break;
+                // not walkable
+                if (collisionMap.CheckCollision(neighbour.x, neighbour.y))
+                    continue;
+
+                if (closedSet.Contains(neighbour))
+                {
+                    continue;
+                }
+
+                int tempGScore = current.gScore + 1;
+                Node n = FindNodeInList(neighbour, openSet);
+                if (n == null)
+                {
+                    openSet.Add(neighbour);
+                }
+                else
+                {
+                    if (tempGScore >= n.gScore)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        n.cameFrom = current;
+                        n.gScore = tempGScore;
+                        n.CalculateHScore(_target);
+                    }
+                }
+
+
+            }
         }
 
 
-
+        // failed
+        Debug.Log("No path found");
         return Vector3.zero;
     }
 
@@ -108,6 +136,19 @@ public class Pathfinder : Singleton<Pathfinder>
         }
 
         return nodeList[currentIndex];
+    }
+
+    private Node FindNodeInList(Node node, List<Node> nodeList)
+    {
+        for (int i = 0; i < nodeList.Count; i++)
+        {
+            if (nodeList[i].Equals(node))
+            {
+                return nodeList[i];
+            }
+        }
+
+        return null;
     }
 
     private List<Vector3> ReconstructPath(Node endNode)
@@ -134,6 +175,22 @@ public class Pathfinder : Singleton<Pathfinder>
         {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        for (int i = 0; i < collisionMap.MapWidth; i++)
+        {
+            for (int j = 0; j < collisionMap.MapHeight; j++)
+            {
+                if (collisionMap.CheckCollision(i,j))
+                {
+                    
+                    Gizmos.DrawWireCube(new Vector3(i, j * -1, 0.0f), Vector3.one);
+                }
+            }
         }
     }
 }

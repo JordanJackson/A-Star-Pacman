@@ -26,7 +26,11 @@ public class GhostController : MonoBehaviour
 	public void Move()
 	{
 		List<Vector3> _path = new List<Vector3>();
-		Pathfinder.Instance.generatePath(transform.position, moveToLocation, _path);
+
+        //PathFinding.Instance.generatePath(transform.position, moveToLocation, _path);
+		Pathfinder.Instance.generatePath(transform.position, moveToLocation, ref _path);
+
+        DrawPath(_path);
 		if (_path.Count >= 2)
 		{
 			iTween.MoveTo(gameObject, iTween.Hash("position", new Vector3(_path[1].x, _path[1].y * -1, 0),
@@ -39,6 +43,14 @@ public class GhostController : MonoBehaviour
 			StartCoroutine(WaitToMove());
 		}
 	}
+
+    void DrawPath(List<Vector3> path)
+    {
+        for (int i = 0; i < path.Count - 1 && path.Count >= 2; i++)
+        {
+            Debug.DrawLine(path[i], path[i + 1], Color.red);
+        }
+    }
 
 	public IEnumerator WaitToMove()
 	{
